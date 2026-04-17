@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LaTeX Bot Playground</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f1115;
+      --panel: #171a21;
+      --panel-2: #1f2430;
+      --text: #e8ecf1;
+      --muted: #a7b0be;
+      --accent: #6ea8fe;
+      --border: #2a3140;
+      --success: #7ee787;
+      --danger: #ff7b72;
+      --code: #0d1117;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 2rem;
+    }
+
+    p {
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      resize: vertical;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 14px;
+      font-size: 1rem;
+      line-height: 1.4;
+      outline: none;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      background: var(--accent);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 0.95;
+    }
+
+    button.secondary {
+      background: #394150;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
+    .status.success {
+      color: var(--success);
+    }
+
+    .label {
+      display: block;
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .render-box {
+      background: white;
+      color: black;
+      border-radius: 12px;
+      padding: 20px;
+      min-height: 90px;
+      overflow-x: auto;
+    }
+
+    .code-box {
+      background: var(--code);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.95rem;
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    @media (min-width: 768px) {
+      .meta-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 0.85rem;
+      margin-right: 8px;
+    }
+
+    .top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top-row">
+      <div>
+        <h1>LaTeX Bot Playground</h1>
+        <p>Type a natural-language prompt, send it to your FastAPI backend, and see the rendered LaTeX instantly.</p>
+      </div>
+      <div>
+        <span class="pill">FastAPI</span>
+        <span class="pill">Poe API</span>
+        <span class="pill">KaTeX</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <label class="label" for="prompt">Prompt</label>
+      <textarea id="prompt" placeholder="Example: write the quadratic formula in latex"></textarea>
+
+      <div class="actions">
+        <button id="submitBtn">Generate</button>
+        <button id="exampleBtn" class="secondary">Use Example</button>
+        <button id="clearBtn" class="secondary">Clear</button>
+      </div>
+
+      <div id="status" class="status">Ready.</div>
+    </div>
+
+    <div class="card">
+      <label class="label">Rendered Output</label>
+      <div id="rendered" class="render-box">
+        <span class="muted">Rendered math will appear here.</span>
+      </div>
+    </div>
+
+    <div class="meta-grid">
+      <div class="card">
+        <label class="label">Raw LaTeX</label>
+        <div id="latex" class="code-box">No output yet.</div>
+      </div>
+
+      <div class="card">
+        <label class="label">Metadata</label>
+        <div class="code-box"><strong>Intent:</strong> <span id="intent">—</span></div>
+        <div style="height: 12px;"></div>
+        <div class="code-box"><strong>Display Mode:</strong> <span id="displayMode">—</span></div>
+      </div>
+    </div>
+
+    <div class="meta-grid">
+      <div class="card">
+        <label class="label">Explanation</label>
+        <div id="explanation" class="code-box">No explanation yet.</div>
+      </div>
+
+      <div class="card">
+        <label class="label">Warnings</label>
+        <div id="warnings" class="code-box">No warnings.</div>
+      </div>
+    </div>
+  </div>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+
+  <script>
+    const promptEl = document.getElementById("prompt");
+    const submitBtn = document.getElementById("submitBtn");
+    const exampleBtn = document.getElementById("exampleBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const statusEl = document.getElementById("status");
+    const renderedEl = document.getElementById("rendered");
+    const latexEl = document.getElementById("latex");
+    const explanationEl = document.getElementById("explanation");
+    const warningsEl = document.getElementById("warnings");
+    const intentEl = document.getElementById("intent");
+    const displayModeEl = document.getElementById("displayMode");
+
+    function setStatus(message, type = "") {
+      statusEl.textContent = message;
+      statusEl.className = "status" + (type ? ` ${type}` : "");
+    }
+
+    function renderLatex(latex, displayMode) {
+      renderedEl.innerHTML = "";
+
+      try {
+        katex.render(latex, renderedEl, {
+          throwOnError: false,
+          displayMode: displayMode === "block"
+        });
+      } catch (err) {
+        renderedEl.innerHTML = `<span style="color:red;">Render error: ${err.message}</span>`;
+      }
+    }
+
+    async function submitPrompt() {
+      const message = promptEl.value.trim();
+
+      if (!message) {
+        setStatus("Please enter a prompt first.", "error");
+        return;
+      }
+
+      setStatus("Generating...", "");
+      submitBtn.disabled = true;
+
+      try {
+        const response = await fetch("/latex", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || "Request failed");
+        }
+
+        latexEl.textContent = data.latex || "";
+        explanationEl.textContent = data.explanation || "";
+        intentEl.textContent = data.intent || "—";
+        displayModeEl.textContent = data.display_mode || "—";
+
+        if (Array.isArray(data.warnings) && data.warnings.length > 0) {
+          warningsEl.textContent = data.warnings.join("\n");
+        } else {
+          warningsEl.textContent = "No warnings.";
+        }
+
+        renderLatex(data.latex || "", data.display_mode || "block");
+        setStatus("Success.", "success");
+      } catch (err) {
+        latexEl.textContent = "No output.";
+        explanationEl.textContent = "No explanation.";
+        intentEl.textContent = "—";
+        displayModeEl.textContent = "—";
+        warningsEl.textContent = "No warnings.";
+        renderedEl.innerHTML = `<span style="color:red;">${err.message}</span>`;
+        setStatus(`Error: ${err.message}`, "error");
+      } finally {
+        submitBtn.disabled = false;
+      }
+    }
+
+    exampleBtn.addEventListener("click", () => {
+      promptEl.value = "write the quadratic formula in latex";
+      setStatus("Example loaded.");
+    });
+
+    clearBtn.addEventListener("click", () => {
+      promptEl.value = "";
+      latexEl.textContent = "No output yet.";
+      explanationEl.textContent = "No explanation yet.";
+      warningsEl.textContent = "No warnings.";
+      intentEl.textContent = "—";
+      displayModeEl.textContent = "—";
+      renderedEl.innerHTML = '<span class="muted">Rendered math will appear here.</span>';
+      setStatus("Cleared.");
+    });
+
+    submitBtn.addEventListener("click", submitPrompt);
+
+    promptEl.addEventListener("keydown", (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+        submitPrompt();
+      }
+    });
+  </script>
+</body>
+</html>
